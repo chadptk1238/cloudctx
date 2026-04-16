@@ -2,38 +2,30 @@
 
 Persistent memory for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). One command, full recall.
 
-CloudCtx gives Claude Code a long-term memory by indexing every conversation into a local SQLite database with full-text search. When context gets compacted, CloudCtx automatically re-injects recent messages so Claude doesn't lose track of what you were working on.
+## The problem
 
-## What it does
+Claude Code forgets everything between sessions. When context gets long, it compacts — and forgets even more. You end up re-explaining your project, your preferences, and your past decisions. Every. Single. Time.
 
-- **Indexes all conversations** — parses Claude Code's JSONL session files into a searchable SQLite database
-- **Full-text search** — FTS5 index over every message, instantly searchable via `cloudctx query`
-- **Compaction recovery** — detects when Claude Code compresses context and re-injects recent messages automatically
-- **Doc ingestion** — ingest reference docs (URLs or local files) so Claude can search them
-- **Thread bookmarks** — save and resume named conversation threads with an interactive TUI picker
-- **Zero config** — `cloudctx init` handles everything: database, hooks, CLAUDE.md instructions
+## The fix
 
-## Install
+CloudCtx gives Claude Code permanent memory. Every conversation is indexed into a local SQLite database. Your agent can search across months of history instantly, survives compaction without losing context, and you can jump back into any saved thread with a single command.
 
 ```bash
 npm install -g cloudctx
 cloudctx init
 ```
 
-That's it. `init` will:
-1. Create a SQLite database at `~/.cloudctx/conversations.db`
-2. Parse all existing Claude Code conversations into it
-3. Install a `UserPromptSubmit` hook so new messages are indexed in real-time
-4. Add a memory block to `~/.claude/CLAUDE.md` so Claude knows how to search
+That's it. Zero config. Works immediately.
 
-## Requirements
+---
 
-- Node.js 18+
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+## Three features that matter
 
-## Usage
+### 1. Persistent memory
 
-### Search your history
+Every message from every Claude Code session is indexed into a local SQLite database with FTS5 full-text search. Your agent can recall past errors, decisions, and solutions across all projects and sessions.
+
+Claude searches it automatically (CloudCtx adds instructions to your `CLAUDE.md`), or you can search manually:
 
 ```bash
 # Full-text search across all conversations
@@ -43,56 +35,83 @@ cloudctx query "fastapi websocket error"
 cloudctx sql "SELECT type, substr(content,1,200), timestamp FROM messages WHERE content LIKE '%migration%' ORDER BY timestamp DESC LIMIT 5"
 ```
 
-### Ingest reference docs
+The database grows with you. Months of conversations, tens of thousands of messages — SQLite handles it without breaking a sweat.
+
+### 2. Compaction recovery
+
+When Claude Code compresses your context (manually via `/compact` or automatically when the conversation gets long), important details disappear. CloudCtx detects compaction and automatically re-injects the last 40 messages from your database back into the conversation.
+
+The result: your agent picks up where it left off instead of starting from scratch. No more "I don't have context about what we were doing." Compaction becomes a non-event.
+
+### 3. Thread launcher
+
+Long-running threads are powerful — but you need a way to get back to them. Instead of keeping terminal tabs open or hunting through session IDs, CloudCtx lets you bookmark threads by name and resume them from an interactive picker.
 
 ```bash
-# Ingest from URL (great for llms.txt files)
-cloudctx docs ingest https://example.com/llms.txt "api,reference"
-
-# Ingest a local file
-cloudctx docs ingest ./api-reference.md "docs"
-
-# Search ingested docs
-cloudctx docs search "authentication"
-
-# List all docs
-cloudctx docs list
-```
-
-### Save and resume threads
-
-```bash
-# Save current conversation with a name
+# Save your current conversation
 cloudctx launch --save "refactoring-auth-module"
 
-# Interactive thread picker (arrow keys, enter to resume)
+# Later — launch the interactive picker
 cloudctx launch
+```
 
-# List saved threads
-cloudctx launch --list
+The launcher is a full TUI: arrow keys to navigate, enter to resume, `d` to delete. It shows every saved thread sorted by last activity, and drops you straight back into the session with `claude --resume`.
 
-# Remove a saved thread
-cloudctx launch --remove "old-thread"
+```
+  CloudCtx — Select a thread to resume
+  ↑↓ navigate  ⏎ select  d delete  q quit
+
+  ❯ refactoring-auth-module           2026-04-16
+    practicebase-dso-detection         2026-04-15
+    hetzner-deploy-setup               2026-04-12
+    cloudctx-development               2026-04-11
+```
+
+---
+
+## Install
+
+```bash
+npm install -g cloudctx
+cloudctx init
+```
+
+`init` handles everything:
+1. Creates a SQLite database at `~/.cloudctx/conversations.db`
+2. Parses all existing Claude Code conversations into it
+3. Installs a `UserPromptSubmit` hook for real-time indexing
+4. Adds a memory block to `~/.claude/CLAUDE.md` so Claude knows how to search
+
+### Requirements
+
+- Node.js 18+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+
+---
+
+## Additional features
+
+### Doc ingestion
+
+Ingest reference docs (URLs, llms.txt files, local markdown) so Claude can search them alongside your conversation history.
+
+```bash
+cloudctx docs ingest https://example.com/llms.txt "api,reference"
+cloudctx docs ingest ./api-reference.md "docs"
+cloudctx docs search "authentication"
+cloudctx docs list
 ```
 
 ### Database management
 
 ```bash
-# Check database stats
-cloudctx status
-
-# Incremental sync (picks up new conversations)
-cloudctx sync
-
-# Full re-import from all Claude Code sessions
-cloudctx seed
-
-# Import from another SQLite database
-cloudctx import /path/to/other.db
-
-# Remove everything (database, hooks, CLAUDE.md block)
-cloudctx reset
+cloudctx status                   # Database stats
+cloudctx sync                     # Incremental sync of new conversations
+cloudctx seed                     # Full re-import from all sessions
+cloudctx import /path/to/other.db # Import from another SQLite database
 ```
+
+---
 
 ## How it works
 
@@ -110,30 +129,28 @@ cloudctx reset
     Claude Code sees             Memory reminders + compaction recovery
 ```
 
-### Database schema
-
-| Table | Purpose |
-|-------|---------|
-| `sessions` | One row per conversation session |
-| `messages` | Every user/assistant message with metadata |
-| `tool_uses` | Tool calls extracted from assistant messages |
-| `prompt_history` | User prompt history across sessions |
-| `summaries` | Compaction summaries |
-| `docs` | Ingested reference documents |
-| `saved_threads` | Named thread bookmarks |
-| `messages_fts` | FTS5 virtual table over messages |
-| `docs_fts` | FTS5 virtual table over docs |
-
-### Compaction detection
-
-When Claude Code compresses context (manually via `/compact` or automatically), CloudCtx detects it on the next prompt and injects the last 40 messages from the database back into the conversation. This means Claude retains awareness of recent work even after compaction.
-
 ### Hook system
 
 CloudCtx installs two hooks in `~/.claude/settings.json`:
 
 - **`UserPromptSubmit`** — syncs the current session to the database on every prompt and injects memory reminders (or compaction recovery if detected)
 - **`SessionEnd`** — runs an async incremental sync when a session closes
+
+### Database schema
+
+| Table | Purpose |
+|-------|---------|
+| `sessions` | One row per conversation session |
+| `messages` | Every user/assistant message with metadata (model, tokens, timestamps, git branch, cwd) |
+| `tool_uses` | Tool calls extracted from assistant messages |
+| `prompt_history` | User prompt history across sessions |
+| `summaries` | Compaction summaries |
+| `docs` | Ingested reference documents |
+| `saved_threads` | Named thread bookmarks |
+| `messages_fts` | FTS5 full-text search over messages |
+| `docs_fts` | FTS5 full-text search over docs |
+
+---
 
 ## All commands
 
