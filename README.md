@@ -29,10 +29,10 @@ Claude searches it automatically (CloudCtx adds instructions to your `CLAUDE.md`
 
 ```bash
 # Full-text search across all conversations
-cloudctx query "fastapi websocket error"
+cloudctx query "redis connection timeout"
 
 # Raw SQL for complex queries
-cloudctx sql "SELECT type, substr(content,1,200), timestamp FROM messages WHERE content LIKE '%migration%' ORDER BY timestamp DESC LIMIT 5"
+cloudctx sql "SELECT type, substr(content,1,200), timestamp FROM messages WHERE content LIKE '%deploy%' ORDER BY timestamp DESC LIMIT 5"
 ```
 
 The database grows with you. Months of conversations, tens of thousands of messages — SQLite handles it without breaking a sweat.
@@ -62,9 +62,9 @@ The launcher is a full TUI: arrow keys to navigate, enter to resume, `d` to dele
   ↑↓ navigate  ⏎ select  d delete  q quit
 
   ❯ refactoring-auth-module           2026-04-16
-    practicebase-dso-detection         2026-04-15
-    hetzner-deploy-setup               2026-04-12
-    cloudctx-development               2026-04-11
+    api-rate-limiting                  2026-04-15
+    database-migration-v2              2026-04-12
+    new-dashboard-ui                   2026-04-11
 ```
 
 ---
