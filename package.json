@@ -27,11 +27,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cloudctx/cloudctx.git"
+    "url": "git+https://github.com/chadptk1238/cloudctx.git"
   },
-  "homepage": "https://github.com/cloudctx/cloudctx#readme",
+  "homepage": "https://github.com/chadptk1238/cloudctx#readme",
   "bugs": {
-    "url": "https://github.com/cloudctx/cloudctx/issues"
+    "url": "https://github.com/chadptk1238/cloudctx/issues"
   },
   "engines": {
     "node": ">=18.0.0"
