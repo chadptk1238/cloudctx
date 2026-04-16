@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CloudCtx — Persistent memory for Claude Code</title>
+<meta name="description" content="CloudCtx gives Claude Code permanent memory. Every conversation indexed locally in SQLite. Full-text search, compaction recovery, and named thread resume — in one command." />
+<meta property="og:title" content="CloudCtx — Persistent memory for Claude Code" />
+<meta property="og:description" content="One command. Full recall. Local-first memory for your AI coding agent." />
+<meta property="og:image" content="assets/hero.png" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" type="image/png" href="assets/logo.png" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        pixel: ['"Press Start 2P"', 'monospace'],
+      },
+      colors: {
+        cream: {
+          50: '#FEFCF7',
+          100: '#FAF7F0',
+          200: '#F2ECE0',
+          300: '#E8DFCD',
+        },
+        navy: {
+          900: '#0F1423',
+          800: '#1A1F2E',
+          700: '#2A3042',
+          600: '#3E4558',
+          500: '#5A6278',
+        },
+        blush: '#F5A7A0',
+        sky: '#A8C8E8',
+        tan: '#D4B896',
+      },
+      boxShadow: {
+        pixel: '4px 4px 0 0 #1A1F2E',
+        'pixel-sm': '2px 2px 0 0 #1A1F2E',
+        'pixel-lg': '6px 6px 0 0 #1A1F2E',
+        'pixel-blush': '4px 4px 0 0 #F5A7A0',
+      },
+    },
+  },
+};
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body {
+    background: #FAF7F0;
+    color: #1A1F2E;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+  }
+  .pixel-edges { image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
+  /* Pixel-pattern background */
+  .dotted-bg {
+    background-image: radial-gradient(circle, #D4B896 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0;
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(26, 31, 46, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26, 31, 46, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  /* Pixel-style borders */
+  .pixel-border {
+    border: 2px solid #1A1F2E;
+  }
+  .pixel-card {
+    background: #FEFCF7;
+    border: 2px solid #1A1F2E;
+    box-shadow: 4px 4px 0 0 #1A1F2E;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .pixel-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 #1A1F2E;
+  }
+  .pixel-btn {
+    background: #1A1F2E;
+    color: #FEFCF7;
+    border: 2px solid #1A1F2E;
+    box-shadow: 4px 4px 0 0 #F5A7A0;
+    transition: all 0.1s ease;
+    font-weight: 600;
+  }
+  .pixel-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 #F5A7A0;
+  }
+  .pixel-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 #F5A7A0;
+  }
+  .pixel-btn-ghost {
+    background: #FEFCF7;
+    color: #1A1F2E;
+    border: 2px solid #1A1F2E;
+    box-shadow: 4px 4px 0 0 #1A1F2E;
+    transition: all 0.1s ease;
+    font-weight: 600;
+  }
+  .pixel-btn-ghost:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 #1A1F2E;
+  }
+  .pixel-btn-ghost:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 #1A1F2E;
+  }
+  .terminal {
+    background: #0F1423;
+    color: #E8DFCD;
+    border: 2px solid #1A1F2E;
+    box-shadow: 6px 6px 0 0 #1A1F2E;
+  }
+  .tui {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .tui .selected {
+    background: rgba(245, 167, 160, 0.2);
+    border-left: 2px solid #F5A7A0;
+    padding-left: 10px;
+    margin-left: -12px;
+  }
+  /* Floating animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .float { animation: float 4s ease-in-out infinite; }
+  /* Marquee for stars background */
+  .pixel-stars::before, .pixel-stars::after {
+    content: '✦';
+    position: absolute;
+    color: #1A1F2E;
+    font-size: 10px;
+  }
+  /* Small pixel character */
+  .pixel-heading {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.7em;
+    letter-spacing: 0.08em;
+  }
+</style>
+</head>
+<body class="font-sans antialiased">
+
+<!-- Nav -->
+<nav class="sticky top-0 inset-x-0 z-50 bg-cream-100/90 backdrop-blur border-b-2 border-navy-800">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-3">
+      <img src="assets/logo.png" class="w-10 h-10 pixel-edges" alt="CloudCtx" />
+      <div>
+        <div class="font-bold tracking-tight text-navy-900">CloudCtx</div>
+        <div class="text-[10px] font-mono text-navy-500 -mt-0.5">persistent memory</div>
+      </div>
+    </a>
+    <div class="hidden md:flex items-center gap-8 text-sm font-medium text-navy-700">
+      <a href="#features" class="hover:text-navy-900 transition">Features</a>
+      <a href="#how" class="hover:text-navy-900 transition">How it works</a>
+      <a href="#install" class="hover:text-navy-900 transition">Install</a>
+      <a href="https://github.com/chadptk1238/cloudctx" class="hover:text-navy-900 transition">GitHub</a>
+    </div>
+    <a href="#install" class="pixel-btn px-4 py-2 rounded-md text-sm">
+      Get started →
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 dotted-bg opacity-40"></div>
+
+  <div class="relative max-w-7xl mx-auto px-6 pt-20 pb-24">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <!-- Left: Copy -->
+      <div>
+        <!-- Pill -->
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cream-50 border-2 border-navy-800 text-xs font-mono mb-8">
+          <span class="w-2 h-2 bg-blush"></span>
+          <span class="text-navy-800">v0.1.1 — on npm</span>
+          <span class="text-navy-500">•</span>
+          <span class="text-navy-500">local-first</span>
+        </div>
+
+        <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.02] mb-6 text-navy-900">
+          Permanent memory<br />
+          for <span class="relative inline-block">
+            Claude Code.
+            <svg class="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 9C50 3 150 3 298 9" stroke="#F5A7A0" stroke-width="4" stroke-linecap="square"/>
+            </svg>
+          </span>
+        </h1>
+
+        <p class="text-lg md:text-xl text-navy-600 max-w-xl mb-10 leading-relaxed">
+          Claude Code forgets between sessions. CloudCtx gives it total recall —
+          every conversation indexed locally, searchable in milliseconds, survives compaction.
+          <span class="font-semibold text-navy-900">One command. Full memory.</span>
+        </p>
+
+        <!-- Install command -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-10">
+          <div class="flex items-center gap-3 px-5 py-3 rounded-md bg-navy-900 text-cream-50 font-mono text-sm border-2 border-navy-800 shadow-pixel-blush">
+            <span class="text-blush">$</span>
+            <span>npm install -g cloudctx</span>
+            <button onclick="copyInstall(this)" class="ml-3 px-2 py-0.5 rounded text-[10px] text-cream-200 border border-cream-200/30 hover:bg-cream-50/10">
+              copy
+            </button>
+          </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="flex items-center gap-6 text-sm text-navy-500">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-blush"></span>
+            <span>MIT licensed</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-navy-800"></span>
+            <span>Node 18+</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-sky"></span>
+            <span>SQLite + FTS5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Hero image -->
+      <div class="relative">
+        <div class="relative float">
+          <img src="assets/hero.png" alt="CloudCtx cloud mascot" class="w-full h-auto pixel-edges" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats strip -->
+<section class="relative border-y-2 border-navy-800 bg-cream-50">
+  <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <div class="text-center md:text-left">
+      <div class="text-4xl font-extrabold tracking-tight text-navy-900">&lt;50ms</div>
+      <div class="text-sm text-navy-500 mt-1">FTS5 search across history</div>
+    </div>
+    <div class="text-center md:text-left">
+      <div class="text-4xl font-extrabold tracking-tight text-navy-900">100%</div>
+      <div class="text-sm text-navy-500 mt-1">Local — nothing leaves your machine</div>
+    </div>
+    <div class="text-center md:text-left">
+      <div class="text-4xl font-extrabold tracking-tight text-navy-900">0</div>
+      <div class="text-sm text-navy-500 mt-1">Config files. Just <span class="font-mono text-blush">init</span>.</div>
+    </div>
+    <div class="text-center md:text-left">
+      <div class="text-4xl font-extrabold tracking-tight text-navy-900">∞</div>
+      <div class="text-sm text-navy-500 mt-1">Messages. SQLite scales past millions.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features" class="relative py-28">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-24">
+      <div class="pixel-heading text-blush mb-4">FEATURES</div>
+      <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-navy-900 mb-5">Three things that fix Claude Code forever.</h2>
+      <p class="text-navy-600 text-lg">No more re-explaining your project every session. No more losing context to compaction. No more hunting for threads from last Tuesday.</p>
+    </div>
+
+    <!-- Feature 1: Persistent memory -->
+    <div class="grid md:grid-cols-2 gap-14 items-center mb-28">
+      <div>
+        <div class="inline-flex items-center gap-3 mb-5">
+          <span class="pixel-heading text-blush">01</span>
+          <span class="w-12 h-0.5 bg-navy-800"></span>
+          <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Persistent memory</span>
+        </div>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Every message, searchable. Forever.</h3>
+        <p class="text-navy-600 text-lg leading-relaxed mb-6">
+          Every conversation gets indexed into a local SQLite database with FTS5
+          full-text search. Past errors, old decisions, that clever fix from three weeks ago —
+          all one query away.
+        </p>
+        <p class="text-navy-600 text-lg leading-relaxed mb-8">
+          Claude searches it automatically — CloudCtx injects instructions into your
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">CLAUDE.md</code>,
+          so your agent stops guessing and starts remembering.
+        </p>
+        <ul class="space-y-3 text-navy-700">
+          <li class="flex gap-3 items-start"><span class="text-blush mt-1">▸</span> FTS5 full-text search across every session</li>
+          <li class="flex gap-3 items-start"><span class="text-blush mt-1">▸</span> Raw SQL for power users</li>
+          <li class="flex gap-3 items-start"><span class="text-blush mt-1">▸</span> Tool calls, git branch, cwd, tokens — all indexed</li>
+        </ul>
+      </div>
+      <div>
+        <div class="terminal rounded-md overflow-hidden">
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-cream-200/10 bg-navy-800">
+            <span class="w-3 h-3 rounded-full bg-blush"></span>
+            <span class="w-3 h-3 rounded-full bg-tan"></span>
+            <span class="w-3 h-3 rounded-full bg-sky"></span>
+            <span class="ml-3 text-xs text-cream-200/60 font-mono">~/project — cloudctx query</span>
+          </div>
+          <div class="p-5 font-mono text-sm leading-relaxed">
+            <div><span class="text-blush">$</span> <span class="text-cream-50">cloudctx query "redis connection timeout"</span></div>
+            <div class="text-cream-200/50 mt-4">Searching 12,847 messages across 184 sessions...</div>
+            <div class="mt-4">
+              <div class="text-tan">[2026-03-22 · api-server]</div>
+              <div class="mt-1 pl-3 border-l-2 border-cream-200/10 text-cream-100">
+                "...your Redis client isn't setting a retry strategy.
+                Add <span class="text-blush">maxRetriesPerRequest: 3</span> and a
+                <span class="text-blush">retryStrategy</span> that backs off exponentially..."
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="text-tan">[2026-04-01 · worker-queue]</div>
+              <div class="mt-1 pl-3 border-l-2 border-cream-200/10 text-cream-100">
+                "The timeout was TCP keepalive — set
+                <span class="text-blush">socket: { keepAlive: 5000 }</span>..."
+              </div>
+            </div>
+            <div class="mt-4 text-cream-200/50">+ 3 more results</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 2: Compaction recovery -->
+    <div class="grid md:grid-cols-2 gap-14 items-center mb-28">
+      <div class="md:order-2">
+        <div class="inline-flex items-center gap-3 mb-5">
+          <span class="pixel-heading text-blush">02</span>
+          <span class="w-12 h-0.5 bg-navy-800"></span>
+          <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Compaction recovery</span>
+        </div>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Compaction becomes a non-event.</h3>
+        <p class="text-navy-600 text-lg leading-relaxed mb-6">
+          When Claude Code compresses your context — manually via
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">/compact</code>
+          or automatically when things get long — critical details vanish. CloudCtx detects
+          compaction and <span class="font-semibold text-navy-900">re-injects the last 40 messages</span> from your database
+          straight back into the conversation.
+        </p>
+        <p class="text-navy-600 text-lg leading-relaxed">
+          Your agent picks up exactly where it left off. No "I don't have context about what we
+          were doing." No restart. No lost momentum.
+        </p>
+      </div>
+      <div class="md:order-1">
+        <div class="pixel-card rounded-md overflow-hidden">
+          <div class="grid grid-cols-2">
+            <div class="p-6 border-r-2 border-navy-800">
+              <div class="text-xs font-mono text-navy-500 mb-3 uppercase tracking-wider">Without CloudCtx</div>
+              <div class="space-y-2 text-sm">
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-700">fix redis timeout</div>
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-700">add connection pool</div>
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-700">migrations setup</div>
+                <div class="p-2 rounded bg-blush/20 border-2 border-blush text-navy-900 text-xs font-medium">⚠ compaction</div>
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-400 italic text-xs">...most context lost</div>
+                <div class="p-2 rounded bg-cream-200 text-navy-500 text-xs">"What were we working on?"</div>
+              </div>
+            </div>
+            <div class="p-6 bg-cream-50">
+              <div class="text-xs font-mono text-blush mb-3 uppercase tracking-wider">With CloudCtx</div>
+              <div class="space-y-2 text-sm">
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-700">fix redis timeout</div>
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-700">add connection pool</div>
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-700">migrations setup</div>
+                <div class="p-2 rounded bg-sky/30 border-2 border-navy-800 text-navy-900 text-xs font-medium">⟲ recovered 40 msgs</div>
+                <div class="p-2 rounded bg-cream-100 border border-cream-300 text-navy-700 text-xs">full context restored</div>
+                <div class="p-2 rounded bg-navy-900 text-cream-50 text-xs">"Continuing on migrations..."</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3: Thread launcher -->
+    <div class="grid md:grid-cols-2 gap-14 items-center">
+      <div>
+        <div class="inline-flex items-center gap-3 mb-5">
+          <span class="pixel-heading text-blush">03</span>
+          <span class="w-12 h-0.5 bg-navy-800"></span>
+          <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Thread launcher</span>
+        </div>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Long-running copilots, not throwaway chats.</h3>
+        <p class="text-navy-600 text-lg leading-relaxed mb-6">
+          Bookmark threads by name. Resume them from an interactive TUI. Every thread becomes a
+          domain-specific copilot — a meta-ads campaign agent, a web design collaborator, a quote
+          builder that remembers last week's negotiation.
+        </p>
+        <p class="text-navy-600 text-lg leading-relaxed mb-8">
+          <span class="font-semibold text-navy-900">Arrow keys navigate. Enter resumes.
+            <code class="px-1 font-mono text-sm text-blush">d</code> deletes.</span>
+          No hunting through session IDs. No stale terminal tabs. Just the threads you work on,
+          sorted by last activity.
+        </p>
+        <div class="flex items-center gap-3">
+          <code class="px-4 py-2 rounded-md bg-navy-900 text-cream-50 text-sm font-mono border-2 border-navy-800 shadow-pixel-sm">cloudctx launch</code>
+          <span class="text-navy-500 text-sm">— and you're back in.</span>
+        </div>
+      </div>
+      <div>
+        <div class="terminal rounded-md overflow-hidden">
+          <div class="flex items-center gap-2 px-4 py-3 border-b border-cream-200/10 bg-navy-800">
+            <span class="w-3 h-3 rounded-full bg-blush"></span>
+            <span class="w-3 h-3 rounded-full bg-tan"></span>
+            <span class="w-3 h-3 rounded-full bg-sky"></span>
+            <span class="ml-3 text-xs text-cream-200/60 font-mono">cloudctx launch</span>
+          </div>
+          <div class="p-6 tui">
+            <div class="text-cream-50 font-medium mb-1">CloudCtx — Select a thread to resume</div>
+            <div class="text-cream-200/40 text-xs mb-6">↑↓ navigate &nbsp; ⏎ select &nbsp; d delete &nbsp; q quit</div>
+            <div class="space-y-1 text-cream-100">
+              <div class="selected flex justify-between"><span class="text-cream-50">❯ meta-ads-copilot</span><span class="text-cream-200/40">2026-04-16</span></div>
+              <div class="flex justify-between pl-3"><span>&nbsp;&nbsp;web-design-copilot</span><span class="text-cream-200/40">2026-04-15</span></div>
+              <div class="flex justify-between pl-3"><span>&nbsp;&nbsp;linkedin-posting-agent</span><span class="text-cream-200/40">2026-04-14</span></div>
+              <div class="flex justify-between pl-3"><span>&nbsp;&nbsp;quote-builder</span><span class="text-cream-200/40">2026-04-12</span></div>
+              <div class="flex justify-between pl-3"><span>&nbsp;&nbsp;data-cleaner</span><span class="text-cream-200/40">2026-04-11</span></div>
+              <div class="flex justify-between pl-3"><span>&nbsp;&nbsp;api-refactor-v2</span><span class="text-cream-200/40">2026-04-09</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how" class="relative py-28 border-y-2 border-navy-800 bg-cream-50">
+  <div class="absolute inset-0 grid-bg"></div>
+  <div class="relative max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <div class="pixel-heading text-blush mb-4">ARCHITECTURE</div>
+      <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-navy-900 mb-5">Local-first. Hook-driven. Zero magic.</h2>
+      <p class="text-navy-600 text-lg">CloudCtx installs two Claude Code hooks, parses your existing JSONL session files, and stays out of the way. Your data never leaves your machine.</p>
+    </div>
+
+    <!-- Architecture diagram -->
+    <div class="max-w-3xl mx-auto">
+      <div class="space-y-3">
+        <!-- Layer 1 -->
+        <div class="pixel-card rounded-md p-5 flex items-center gap-4">
+          <div class="w-12 h-12 bg-cream-100 border-2 border-navy-800 flex items-center justify-center text-xl">📂</div>
+          <div class="flex-1">
+            <div class="font-mono text-sm text-navy-900 font-semibold">~/.claude/projects/**/*.jsonl</div>
+            <div class="text-xs text-navy-500 mt-0.5">Claude Code's native conversation files (we only read)</div>
+          </div>
+        </div>
+        <div class="flex justify-center text-navy-500 font-mono">↓</div>
+
+        <!-- Layer 2 -->
+        <div class="pixel-card rounded-md p-5 flex items-center gap-4 bg-blush/10">
+          <div class="w-12 h-12 bg-blush border-2 border-navy-800 flex items-center justify-center text-xl">⚙️</div>
+          <div class="flex-1">
+            <div class="font-mono text-sm text-navy-900 font-semibold">cloudctx seed / sync</div>
+            <div class="text-xs text-navy-500 mt-0.5">Parses JSONL → structured tables + FTS5 index</div>
+          </div>
+        </div>
+        <div class="flex justify-center text-navy-500 font-mono">↓</div>
+
+        <!-- Layer 3 -->
+        <div class="pixel-card rounded-md p-5 flex items-center gap-4">
+          <div class="w-12 h-12 bg-cream-100 border-2 border-navy-800 flex items-center justify-center text-xl">💾</div>
+          <div class="flex-1">
+            <div class="font-mono text-sm text-navy-900 font-semibold">~/.cloudctx/conversations.db</div>
+            <div class="text-xs text-navy-500 mt-0.5">SQLite + FTS5 — sessions, messages, tool_uses, docs, threads</div>
+          </div>
+        </div>
+        <div class="flex justify-center text-navy-500 font-mono">↓</div>
+
+        <!-- Layer 4 -->
+        <div class="pixel-card rounded-md p-5 flex items-center gap-4 bg-sky/20">
+          <div class="w-12 h-12 bg-sky border-2 border-navy-800 flex items-center justify-center text-xl">🪝</div>
+          <div class="flex-1">
+            <div class="font-mono text-sm text-navy-900 font-semibold">UserPromptSubmit hook</div>
+            <div class="text-xs text-navy-500 mt-0.5">Fires every prompt — injects memory reminder or compaction recovery</div>
+          </div>
+        </div>
+        <div class="flex justify-center text-navy-500 font-mono">↓</div>
+
+        <!-- Layer 5 -->
+        <div class="pixel-card rounded-md p-5 flex items-center gap-4 bg-tan/20">
+          <div class="w-12 h-12 bg-tan border-2 border-navy-800 flex items-center justify-center text-xl">✨</div>
+          <div class="flex-1">
+            <div class="font-mono text-sm text-navy-900 font-semibold">Claude Code remembers</div>
+            <div class="text-xs text-navy-500 mt-0.5">Searches history automatically, survives compaction, resumes threads</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schema preview -->
+      <div class="mt-16">
+        <div class="pixel-heading text-blush text-center mb-6">SCHEMA</div>
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div class="pixel-card p-4 rounded-md">
+            <div class="font-mono font-semibold text-navy-900 mb-1">sessions</div>
+            <div class="text-xs text-navy-500">One row per conversation</div>
+          </div>
+          <div class="pixel-card p-4 rounded-md">
+            <div class="font-mono font-semibold text-navy-900 mb-1">messages</div>
+            <div class="text-xs text-navy-500">Every message + metadata</div>
+          </div>
+          <div class="pixel-card p-4 rounded-md">
+            <div class="font-mono font-semibold text-navy-900 mb-1">tool_uses</div>
+            <div class="text-xs text-navy-500">Tool calls extracted</div>
+          </div>
+          <div class="pixel-card p-4 rounded-md">
+            <div class="font-mono font-semibold text-navy-900 mb-1">docs</div>
+            <div class="text-xs text-navy-500">Ingested reference docs</div>
+          </div>
+          <div class="pixel-card p-4 rounded-md">
+            <div class="font-mono font-semibold text-navy-900 mb-1">saved_threads</div>
+            <div class="text-xs text-navy-500">Named bookmarks</div>
+          </div>
+          <div class="pixel-card p-4 rounded-md">
+            <div class="font-mono font-semibold text-navy-900 mb-1">messages_fts</div>
+            <div class="text-xs text-navy-500">FTS5 full-text search</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Commands -->
+<section class="relative py-28">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <div class="pixel-heading text-blush mb-4">CLI</div>
+      <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-navy-900 mb-5">Twelve commands. All you'll ever need.</h2>
+      <p class="text-navy-600 text-lg">Deliberately small surface area. Everything does one thing well.</p>
+    </div>
+
+    <div class="max-w-4xl mx-auto terminal rounded-md overflow-hidden">
+      <div class="flex items-center gap-2 px-4 py-3 border-b border-cream-200/10 bg-navy-800">
+        <span class="w-3 h-3 rounded-full bg-blush"></span>
+        <span class="w-3 h-3 rounded-full bg-tan"></span>
+        <span class="w-3 h-3 rounded-full bg-sky"></span>
+        <span class="ml-3 text-xs text-cream-200/60 font-mono">cloudctx --help</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-relaxed grid md:grid-cols-2 gap-x-8 gap-y-1">
+        <div><span class="text-blush">init</span>           <span class="text-cream-200/60">Set up DB, hooks, CLAUDE.md</span></div>
+        <div><span class="text-blush">query</span>          <span class="text-cream-200/60">FTS search across history</span></div>
+        <div><span class="text-blush">sql</span>            <span class="text-cream-200/60">Read-only SQL</span></div>
+        <div><span class="text-blush">sync</span>           <span class="text-cream-200/60">Incremental sync</span></div>
+        <div><span class="text-blush">seed</span>           <span class="text-cream-200/60">Full re-import</span></div>
+        <div><span class="text-blush">status</span>         <span class="text-cream-200/60">Database stats</span></div>
+        <div><span class="text-blush">import</span>         <span class="text-cream-200/60">Import from another DB</span></div>
+        <div><span class="text-blush">reset</span>          <span class="text-cream-200/60">Clean uninstall</span></div>
+        <div><span class="text-blush">launch</span>         <span class="text-cream-200/60">Interactive thread picker</span></div>
+        <div><span class="text-blush">launch --save</span>  <span class="text-cream-200/60">Bookmark a thread</span></div>
+        <div><span class="text-blush">docs ingest</span>    <span class="text-cream-200/60">Ingest reference docs</span></div>
+        <div><span class="text-blush">docs search</span>    <span class="text-cream-200/60">FTS over docs</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Install -->
+<section id="install" class="relative py-28 border-y-2 border-navy-800 bg-cream-50 overflow-hidden">
+  <div class="absolute inset-0 dotted-bg opacity-30"></div>
+  <div class="relative max-w-4xl mx-auto px-6 text-center">
+    <img src="assets/logo.png" class="w-24 h-24 mx-auto pixel-edges mb-8 float" alt="CloudCtx" />
+    <h2 class="text-4xl md:text-6xl font-extrabold tracking-tight text-navy-900 mb-6">
+      Ready in <span class="relative inline-block">
+        thirty seconds<svg class="absolute -bottom-1 left-0 w-full" viewBox="0 0 300 12" fill="none"><path d="M2 9C50 3 150 3 298 9" stroke="#F5A7A0" stroke-width="4" stroke-linecap="square"/></svg>
+      </span>.
+    </h2>
+    <p class="text-navy-600 text-lg mb-10 max-w-xl mx-auto">
+      Two commands. Works with your existing Claude Code setup. Seeds your full history immediately.
+    </p>
+
+    <div class="max-w-2xl mx-auto terminal rounded-md overflow-hidden text-left mb-10">
+      <div class="flex items-center gap-2 px-4 py-3 border-b border-cream-200/10 bg-navy-800">
+        <span class="w-3 h-3 rounded-full bg-blush"></span>
+        <span class="w-3 h-3 rounded-full bg-tan"></span>
+        <span class="w-3 h-3 rounded-full bg-sky"></span>
+        <span class="ml-3 text-xs text-cream-200/60 font-mono">install</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-loose">
+        <div><span class="text-blush">$</span> <span class="text-cream-50">npm install -g cloudctx</span></div>
+        <div><span class="text-blush">$</span> <span class="text-cream-50">cloudctx init</span></div>
+        <div class="text-cream-200/50 mt-2 pl-4 border-l-2 border-cream-200/10">
+          <span class="text-sky">✓</span> Created ~/.cloudctx/conversations.db<br />
+          <span class="text-sky">✓</span> Seeded 12,847 messages from 184 sessions<br />
+          <span class="text-sky">✓</span> Installed UserPromptSubmit + SessionEnd hooks<br />
+          <span class="text-sky">✓</span> Added memory block to ~/.claude/CLAUDE.md<br />
+          <span class="text-blush mt-2 inline-block font-semibold">Ready. Claude Code now has persistent memory.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
+      <a href="https://github.com/chadptk1238/cloudctx" class="pixel-btn-ghost px-6 py-3 rounded-md text-sm flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        Star on GitHub
+      </a>
+      <a href="https://www.npmjs.com/package/cloudctx" class="pixel-btn-ghost px-6 py-3 rounded-md text-sm">
+        View on npm →
+      </a>
+    </div>
+    <div class="text-xs text-navy-500 mt-6 font-mono">Requires Node.js 18+ and Claude Code installed.</div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="relative py-24">
+  <div class="max-w-3xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <div class="pixel-heading text-blush mb-4">FAQ</div>
+      <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900">Common questions</h2>
+    </div>
+    <div class="space-y-4">
+      <details class="group pixel-card rounded-md p-5">
+        <summary class="cursor-pointer font-semibold text-navy-900 flex items-center justify-between">
+          <span>Does CloudCtx send my conversations anywhere?</span>
+          <span class="text-blush group-open:rotate-180 transition font-mono">▾</span>
+        </summary>
+        <p class="mt-4 text-navy-600 leading-relaxed">
+          No. Everything lives in
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">~/.cloudctx/conversations.db</code>
+          on your local machine. No telemetry, no cloud sync, no API calls. The only network traffic
+          happens if you explicitly run
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">cloudctx docs ingest &lt;url&gt;</code>.
+        </p>
+      </details>
+      <details class="group pixel-card rounded-md p-5">
+        <summary class="cursor-pointer font-semibold text-navy-900 flex items-center justify-between">
+          <span>Does it modify my Claude Code conversation files?</span>
+          <span class="text-blush group-open:rotate-180 transition font-mono">▾</span>
+        </summary>
+        <p class="mt-4 text-navy-600 leading-relaxed">
+          No. CloudCtx only <em>reads</em> the JSONL files in
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">~/.claude/projects/</code>.
+          It writes to its own database and adds hooks + a CLAUDE.md block. Run
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">cloudctx reset</code>
+          and everything it added is gone.
+        </p>
+      </details>
+      <details class="group pixel-card rounded-md p-5">
+        <summary class="cursor-pointer font-semibold text-navy-900 flex items-center justify-between">
+          <span>How big does the database get?</span>
+          <span class="text-blush group-open:rotate-180 transition font-mono">▾</span>
+        </summary>
+        <p class="mt-4 text-navy-600 leading-relaxed">
+          SQLite handles millions of rows comfortably. Tens of thousands of messages land in
+          well under 100 MB. FTS5 queries stay under 50ms at that scale.
+        </p>
+      </details>
+      <details class="group pixel-card rounded-md p-5">
+        <summary class="cursor-pointer font-semibold text-navy-900 flex items-center justify-between">
+          <span>Does it work with my existing history?</span>
+          <span class="text-blush group-open:rotate-180 transition font-mono">▾</span>
+        </summary>
+        <p class="mt-4 text-navy-600 leading-relaxed">
+          Yes —
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">cloudctx init</code>
+          walks every JSONL file in
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">~/.claude/projects/</code>
+          and indexes it. Months of old conversations become searchable immediately.
+        </p>
+      </details>
+      <details class="group pixel-card rounded-md p-5">
+        <summary class="cursor-pointer font-semibold text-navy-900 flex items-center justify-between">
+          <span>Is it open source?</span>
+          <span class="text-blush group-open:rotate-180 transition font-mono">▾</span>
+        </summary>
+        <p class="mt-4 text-navy-600 leading-relaxed">
+          MIT licensed. Source on
+          <a href="https://github.com/chadptk1238/cloudctx" class="text-navy-900 font-semibold underline decoration-blush decoration-2 underline-offset-2">GitHub</a>.
+          Issues and PRs welcome.
+        </p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="relative border-t-2 border-navy-800 py-12 bg-cream-50">
+  <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+    <div class="flex items-center gap-3">
+      <img src="assets/logo.png" class="w-10 h-10 pixel-edges" alt="CloudCtx" />
+      <div>
+        <div class="font-bold tracking-tight text-navy-900">CloudCtx</div>
+        <div class="text-xs text-navy-500">Persistent memory for Claude Code.</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-6 text-sm text-navy-700 font-medium">
+      <a href="https://github.com/chadptk1238/cloudctx" class="hover:text-navy-900 transition">GitHub</a>
+      <a href="https://www.npmjs.com/package/cloudctx" class="hover:text-navy-900 transition">npm</a>
+      <a href="https://github.com/chadptk1238/cloudctx/issues" class="hover:text-navy-900 transition">Issues</a>
+      <a href="https://github.com/chadptk1238/cloudctx/blob/main/LICENSE" class="hover:text-navy-900 transition">MIT</a>
+    </div>
+    <div class="text-xs text-navy-500 font-mono">© 2026 CloudCtx</div>
+  </div>
+</footer>
+
+<script>
+function copyInstall(btn) {
+  navigator.clipboard.writeText('npm install -g cloudctx');
+  const original = btn.textContent;
+  btn.textContent = 'copied';
+  btn.style.color = '#F5A7A0';
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.style.color = '';
+  }, 1400);
+}
+</script>
+
+</body>
+</html>
