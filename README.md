@@ -48,8 +48,8 @@ The result: your agent picks up where it left off instead of starting from scrat
 Long-running threads are powerful — but you need a way to get back to them. Instead of keeping terminal tabs open or hunting through session IDs, CloudCtx lets you bookmark threads by name and resume them from an interactive picker.
 
 ```bash
-# Save your current conversation
-cloudctx launch --save "refactoring-auth-module"
+# Save your current conversation as a named copilot
+cloudctx launch --save "meta-ads-copilot"
 
 # Later — launch the interactive picker
 cloudctx launch
@@ -61,10 +61,10 @@ The launcher is a full TUI: arrow keys to navigate, enter to resume, `d` to dele
   CloudCtx — Select a thread to resume
   ↑↓ navigate  ⏎ select  d delete  q quit
 
-  ❯ refactoring-auth-module           2026-04-16
-    api-rate-limiting                  2026-04-15
-    database-migration-v2              2026-04-12
-    new-dashboard-ui                   2026-04-11
+  ❯ meta-ads-copilot                   2026-04-16
+    web-design-copilot                 2026-04-15
+    quote-builder                      2026-04-12
+    data-pipeline                      2026-04-11
 ```
 
 ---
