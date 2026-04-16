@@ -1,0 +1,5 @@
+node_modules/
+.cloudctx/
+*.db
+BACKUP_CURRENT_STATE.txt
+.DS_Store

@@ -1,0 +1,44 @@
+{
+  "name": "cloudctx",
+  "version": "0.1.0",
+  "description": "Persistent memory for Claude Code. One command, full recall.",
+  "type": "module",
+  "bin": {
+    "cloudctx": "./bin/cloudctx.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node bin/cloudctx.js status"
+  },
+  "keywords": [
+    "claude-code",
+    "memory",
+    "context",
+    "sqlite",
+    "ai",
+    "persistent-memory",
+    "fts5",
+    "conversation-history"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloudctx/cloudctx.git"
+  },
+  "homepage": "https://github.com/cloudctx/cloudctx#readme",
+  "bugs": {
+    "url": "https://github.com/cloudctx/cloudctx/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Chad Piatek",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.10.0"
+  }
+}
