@@ -186,9 +186,9 @@ tailwind.config = {
   <div class="absolute inset-0 dotted-bg opacity-40"></div>
 
   <div class="relative max-w-7xl mx-auto px-6 pt-20 pb-24">
-    <div class="grid lg:grid-cols-2 gap-12 items-center">
+    <div class="grid lg:grid-cols-5 gap-12 items-center">
       <!-- Left: Copy -->
-      <div>
+      <div class="lg:col-span-3">
         <!-- Pill -->
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cream-50 border-2 border-navy-800 text-xs font-mono mb-8">
           <span class="w-2 h-2 bg-blush"></span>
@@ -197,9 +197,8 @@ tailwind.config = {
           <span class="text-navy-500">local-first</span>
         </div>
 
-        <h1 class="text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6 text-navy-900">
-          Turn Claude Code into<br />
-          a fleet of <span class="relative inline-block">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6 text-navy-900">
+          Turn Claude Code into a fleet of <span class="relative inline-block">
             named copilots
             <svg class="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 9C50 3 150 3 298 9" stroke="#F5A7A0" stroke-width="4" stroke-linecap="square"/>
@@ -243,7 +242,7 @@ tailwind.config = {
       </div>
 
       <!-- Right: Hero image -->
-      <div class="relative">
+      <div class="relative lg:col-span-2">
         <div class="relative float">
           <img src="assets/hero.png" alt="CloudCtx cloud mascot" class="w-full h-auto pixel-edges" />
         </div>
