@@ -347,17 +347,17 @@ tailwind.config = {
           <span class="w-12 h-0.5 bg-navy-800"></span>
           <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Compaction recovery</span>
         </div>
-        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Compaction becomes a non-event.</h3>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Claude never forgets mid-conversation.</h3>
         <p class="text-navy-600 text-lg leading-relaxed mb-6">
-          When Claude Code compresses your context — manually via
-          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">/compact</code>
-          or automatically when things get long — critical details vanish. CloudCtx detects
-          compaction and <span class="font-semibold text-navy-900">re-injects the last 40 messages</span> from your database
-          straight back into the conversation.
+          When a Claude Code session gets long, it auto-compresses your chat to save tokens —
+          and older details quietly disappear. Same thing happens when you run
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">/compact</code>.
+          Suddenly you're hearing <span class="italic">"remind me what we were doing?"</span>
         </p>
         <p class="text-navy-600 text-lg leading-relaxed">
-          Your agent picks up exactly where it left off. No "I don't have context about what we
-          were doing." No restart. No lost momentum.
+          CloudCtx catches that moment and
+          <span class="font-semibold text-navy-900">silently re-injects the last 40 messages</span>
+          back into the conversation. Your agent doesn't skip a beat — no restart, no lost context.
         </p>
       </div>
       <div class="md:order-1">
@@ -398,16 +398,18 @@ tailwind.config = {
           <span class="w-12 h-0.5 bg-navy-800"></span>
           <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Thread launcher</span>
         </div>
-        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Long-running copilots, not throwaway chats.</h3>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Jump back into any project in one command.</h3>
         <p class="text-navy-600 text-lg leading-relaxed mb-6">
-          Bookmark threads by name. Resume them from an interactive TUI. Every thread becomes a
-          domain-specific copilot — a meta-ads campaign agent, a web design collaborator, a quote
-          builder that remembers last week's negotiation.
+          Claude Code has <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">--resume</code>,
+          but the list is a wall of unnamed session IDs. CloudCtx lets you
+          <span class="font-semibold text-navy-900">bookmark threads by name</span> —
+          your meta-ads campaign copilot, your web design collaborator, the quote builder
+          that remembers last week's negotiation.
         </p>
         <p class="text-navy-600 text-lg leading-relaxed mb-8">
-          <span class="font-semibold text-navy-900">Arrow keys navigate. Enter resumes.
-            <code class="px-1 font-mono text-sm text-blush">d</code> deletes.</span>
-          No hunting through session IDs. No stale terminal tabs. Just the threads you work on,
+          <span class="font-semibold text-navy-900">Arrow keys to navigate. Enter to resume.
+            <code class="px-1 font-mono text-sm text-blush">d</code> to delete.</span>
+          No hunting through session IDs, no stale terminal tabs — just the threads you actually work on,
           sorted by last activity.
         </p>
         <div class="flex items-center gap-3">
