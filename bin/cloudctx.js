@@ -3,7 +3,7 @@
 import { getDb, getReadonlyDb, createSchema, dbExists, getDbPath, getDataDir } from '../lib/db.js';
 import { seedDatabase, incrementalSync } from '../lib/parser.js';
 import { runHook } from '../lib/hook.js';
-import { installHook, uninstallHook, installClaudeMd, uninstallClaudeMd } from '../lib/install.js';
+import { installHook, uninstallHook, installClaudeMd, uninstallClaudeMd, installSlashCommand, uninstallSlashCommand } from '../lib/install.js';
 import { saveThread, removeThread, listThreads, interactiveLaunch } from '../lib/launch.js';
 import { ingestDoc, listDocs, searchDocs, deleteDoc } from '../lib/docs.js';
 import { existsSync, rmSync, statSync } from 'fs';
@@ -110,6 +110,10 @@ async function cmdInit() {
   // Install CLAUDE.md
   installClaudeMd();
   console.log('  ✓ Instructions added to ~/.claude/CLAUDE.md');
+
+  // Install slash command
+  installSlashCommand();
+  console.log('  ✓ Slash command /cloudctx-save added to ~/.claude/commands/');
 
   console.log('');
   console.log('  ✓ Memory is active. Open a new Claude Code session to use it.');
@@ -284,6 +288,11 @@ async function cmdReset() {
   // Remove CLAUDE.md block
   if (uninstallClaudeMd()) {
     console.log('  ✓ CLAUDE.md block removed');
+  }
+
+  // Remove slash command
+  if (uninstallSlashCommand()) {
+    console.log('  ✓ Slash command removed');
   }
 
   // Delete data dir
