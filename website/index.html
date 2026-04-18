@@ -192,7 +192,7 @@ tailwind.config = {
         <!-- Pill -->
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cream-50 border-2 border-navy-800 text-xs font-mono mb-8">
           <span class="w-2 h-2 bg-blush"></span>
-          <span class="text-navy-800">v0.1.1 — on npm</span>
+          <span class="text-navy-800">v0.1.2 — on npm</span>
           <span class="text-navy-500">•</span>
           <span class="text-navy-500">local-first</span>
         </div>
@@ -405,14 +405,17 @@ tailwind.config = {
           builder that remembers last week's negotiation.
         </p>
         <p class="text-navy-600 text-lg leading-relaxed mb-8">
-          <span class="font-semibold text-navy-900">Arrow keys navigate. Enter resumes.
-            <code class="px-1 font-mono text-sm text-blush">d</code> deletes.</span>
+          <span class="font-semibold text-navy-900">Save from inside Claude Code with
+            <code class="px-1 font-mono text-sm text-blush">/cloudctx-save</code>.
+            Resume from any directory with <code class="px-1 font-mono text-sm text-blush">cloudctx launch</code>.</span>
           No hunting through session IDs. No stale terminal tabs. Just the threads you work on,
           sorted by last activity.
         </p>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <code class="px-4 py-2 rounded-md bg-navy-900 text-cream-50 text-sm font-mono border-2 border-navy-800 shadow-pixel-sm">/cloudctx-save &lt;name&gt;</code>
+          <span class="text-navy-500 text-sm">inside CC →</span>
           <code class="px-4 py-2 rounded-md bg-navy-900 text-cream-50 text-sm font-mono border-2 border-navy-800 shadow-pixel-sm">cloudctx launch</code>
-          <span class="text-navy-500 text-sm">— and you're back in.</span>
+          <span class="text-navy-500 text-sm">to jump back in.</span>
         </div>
       </div>
       <div>
