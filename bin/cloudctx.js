@@ -491,12 +491,19 @@ async function cmdConfig(subArgs) {
 
     if (key === 'statusline') {
       if (bool) {
-        installStatusline();
+        const result = installStatusline();
         console.log(`  ✓ statusline = true — wired into ~/.claude/settings.json`);
+        if (result.wrapped) {
+          console.log(`    Existing statusLine detected — wrapping it (you'll see both).`);
+        }
         console.log(`    Open a new Claude Code session to see it.`);
       } else {
-        uninstallStatusline();
-        console.log(`  ✓ statusline = false — removed from ~/.claude/settings.json`);
+        const result = uninstallStatusline();
+        if (result.restored) {
+          console.log(`  ✓ statusline = false — your original statusLine restored.`);
+        } else {
+          console.log(`  ✓ statusline = false — removed from ~/.claude/settings.json`);
+        }
       }
     } else {
       console.log(`  ✓ ${key} = ${storeValue}`);
@@ -517,7 +524,20 @@ async function cmdConfig(subArgs) {
   process.exit(1);
 }
 
+function registerRawModeExitGuard() {
+  process.once('exit', () => {
+    try { if (process.stdin.isTTY) process.stdin.setRawMode(false); } catch {}
+  });
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+    process.once(sig, () => {
+      try { if (process.stdin.isTTY) process.stdin.setRawMode(false); } catch {}
+      process.exit(130);
+    });
+  }
+}
+
 async function pickColorInteractive() {
+  registerRawModeExitGuard();
   const colors = Object.keys(STATUSLINE_COLORS);
   const currentColor = getConfigValue('statusline_color') || 'cyan';
   let cursor = Math.max(0, colors.indexOf(currentColor));
