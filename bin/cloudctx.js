@@ -481,6 +481,10 @@ async function cmdConfig(subArgs) {
         console.error(`Run: cloudctx config colors`);
         process.exit(1);
       }
+      if (key === 'launch_sort' && !['time', 'alpha'].includes(value)) {
+        console.error(`launch_sort must be 'time' or 'alpha' — got: ${value}`);
+        process.exit(1);
+      }
       storeValue = value;
     } else {
       storeValue = value;
