@@ -192,7 +192,7 @@ tailwind.config = {
         <!-- Pill -->
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cream-50 border-2 border-navy-800 text-xs font-mono mb-8">
           <span class="w-2 h-2 bg-blush"></span>
-          <span class="text-navy-800">v0.1.3 — on npm</span>
+          <span class="text-navy-800">v0.1.4 — on npm</span>
           <span class="text-navy-500">•</span>
           <span class="text-navy-500">local-first</span>
         </div>
@@ -412,6 +412,12 @@ tailwind.config = {
           No hunting through session IDs. No stale terminal tabs. Just the threads you work on,
           sorted by last activity.
         </p>
+        <p class="text-navy-600 text-base leading-relaxed mb-8">
+          <span class="font-semibold text-navy-900">New in v0.1.4:</span> opt-in status line in Claude Code.
+          Run <code class="px-1 font-mono text-sm text-blush">cloudctx config set statusline true</code> and the
+          saved thread you're in shows up as <code class="px-1 font-mono text-sm text-blush">📌 thread-name</code>
+          right in CC's bottom bar. Pick your color with <code class="px-1 font-mono text-sm text-blush">cloudctx config color</code>.
+        </p>
         <div class="flex flex-wrap items-center gap-3">
           <code class="px-4 py-2 rounded-md bg-navy-900 text-cream-50 text-sm font-mono border-2 border-navy-800 shadow-pixel-sm">/cloudctx-save &lt;name&gt;</code>
           <span class="text-navy-500 text-sm">inside CC →</span>
@@ -569,6 +575,8 @@ tailwind.config = {
         <div><span class="text-blush">reset</span>          <span class="text-cream-200/60">Clean uninstall</span></div>
         <div><span class="text-blush">launch</span>         <span class="text-cream-200/60">Interactive thread picker</span></div>
         <div><span class="text-blush">launch --save</span>  <span class="text-cream-200/60">Bookmark a thread</span></div>
+        <div><span class="text-blush">config</span>         <span class="text-cream-200/60">View / set settings</span></div>
+        <div><span class="text-blush">config color</span>   <span class="text-cream-200/60">Pick statusline color</span></div>
         <div><span class="text-blush">docs ingest</span>    <span class="text-cream-200/60">Ingest reference docs</span></div>
         <div><span class="text-blush">docs search</span>    <span class="text-cream-200/60">FTS over docs</span></div>
       </div>
