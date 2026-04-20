@@ -4,7 +4,7 @@ import { getDb, getReadonlyDb, createSchema, dbExists, getDbPath, getDataDir } f
 import { seedDatabase, incrementalSync } from '../lib/parser.js';
 import { runHook } from '../lib/hook.js';
 import { installHook, uninstallHook, installClaudeMd, uninstallClaudeMd, installSlashCommand, uninstallSlashCommand } from '../lib/install.js';
-import { saveThread, removeThread, listThreads, interactiveLaunch } from '../lib/launch.js';
+import { saveThread, removeThread, renameThread, listThreads, interactiveLaunch } from '../lib/launch.js';
 import { ingestDoc, listDocs, searchDocs, deleteDoc } from '../lib/docs.js';
 import { existsSync, rmSync, statSync } from 'fs';
 
@@ -111,9 +111,9 @@ async function cmdInit() {
   installClaudeMd();
   console.log('  ✓ Instructions added to ~/.claude/CLAUDE.md');
 
-  // Install slash command
+  // Install slash commands
   installSlashCommand();
-  console.log('  ✓ Slash command /cloudctx-save added to ~/.claude/commands/');
+  console.log('  ✓ Slash commands /cloudctx-save and /cloudctx-rename added to ~/.claude/commands/');
 
   console.log('');
   console.log('  ✓ Memory is active. Open a new Claude Code session to use it.');
@@ -322,6 +322,14 @@ async function cmdLaunch(subArgs) {
       process.exit(1);
     }
     removeThread(name);
+  } else if (subArgs[0] === '--rename') {
+    const oldName = subArgs[1];
+    const newName = subArgs[2];
+    if (!oldName || !newName) {
+      console.error('Usage: cloudctx launch --rename "old-name" "new-name"');
+      process.exit(1);
+    }
+    renameThread(oldName, newName);
   } else if (subArgs[0] === '--list') {
     listThreads();
   } else {
@@ -449,6 +457,7 @@ function showHelp() {
 
     launch                        Interactive thread picker
     launch --save "name" [id]     Save a thread for quick resume
+    launch --rename "old" "new"   Rename a saved thread
     launch --remove "name"        Remove a saved thread
     launch --list                 List saved threads
 
