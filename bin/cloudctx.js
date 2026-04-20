@@ -3,9 +3,11 @@
 import { getDb, getReadonlyDb, createSchema, dbExists, getDbPath, getDataDir } from '../lib/db.js';
 import { seedDatabase, incrementalSync } from '../lib/parser.js';
 import { runHook } from '../lib/hook.js';
-import { installHook, uninstallHook, installClaudeMd, uninstallClaudeMd, installSlashCommand, uninstallSlashCommand } from '../lib/install.js';
+import { runStatusline } from '../lib/statusline.js';
+import { installHook, uninstallHook, installClaudeMd, uninstallClaudeMd, installSlashCommand, uninstallSlashCommand, installStatusline, uninstallStatusline } from '../lib/install.js';
 import { saveThread, removeThread, renameThread, listThreads, interactiveLaunch } from '../lib/launch.js';
 import { ingestDoc, listDocs, searchDocs, deleteDoc } from '../lib/docs.js';
+import { getConfig, getConfigValue, setConfig, unsetConfig, parseBool, isKnownKey, listKnownKeys, describeKey, getConfigPath, isBoolKey, isStringKey, STATUSLINE_COLORS } from '../lib/config.js';
 import { existsSync, rmSync, statSync } from 'fs';
 
 const args = process.argv.slice(2);
@@ -22,6 +24,14 @@ switch (command) {
 
   case 'hook':
     runHook();
+    break;
+
+  case 'statusline':
+    runStatusline();
+    break;
+
+  case 'config':
+    await cmdConfig(args.slice(1));
     break;
 
   case 'sync':
@@ -295,6 +305,11 @@ async function cmdReset() {
     console.log('  ✓ Slash command removed');
   }
 
+  // Remove statusline if it was installed
+  if (uninstallStatusline()) {
+    console.log('  ✓ Status line removed');
+  }
+
   // Delete data dir
   if (existsSync(getDataDir())) {
     rmSync(getDataDir(), { recursive: true });
@@ -377,6 +392,191 @@ async function cmdDocs(subArgs) {
       console.error('Usage: cloudctx docs [ingest|list|search|delete]');
       process.exit(1);
   }
+}
+
+async function cmdConfig(subArgs) {
+  const sub = subArgs[0] || 'list';
+
+  if (sub === 'list') {
+    const config = getConfig();
+    console.log('');
+    console.log('  CloudCtx Config');
+    console.log('  ' + '─'.repeat(50));
+    for (const key of listKnownKeys()) {
+      const val = config[key];
+      const desc = describeKey(key);
+      console.log(`  ${key.padEnd(18)} ${String(val).padEnd(6)} ${desc}`);
+    }
+    console.log('');
+    console.log(`  File: ${getConfigPath()}`);
+    console.log('');
+    console.log('  cloudctx config set <key> <true|false>');
+    console.log('  cloudctx config unset <key>');
+    console.log('');
+    return;
+  }
+
+  if (sub === 'get') {
+    const key = subArgs[1];
+    if (!key) { console.error('Usage: cloudctx config get <key>'); process.exit(1); }
+    if (!isKnownKey(key)) {
+      console.error(`Unknown key: ${key}`);
+      console.error(`Known keys: ${listKnownKeys().join(', ')}`);
+      process.exit(1);
+    }
+    console.log(getConfigValue(key));
+    return;
+  }
+
+  if (sub === 'color' || sub === 'colors') {
+    if (!process.stdin.isTTY) {
+      console.log('');
+      console.log('  Valid statusline_color values:');
+      for (const name of Object.keys(STATUSLINE_COLORS)) {
+        const code = STATUSLINE_COLORS[name];
+        const preview = code ? `\x1b[1;${code}m📌 ${name}\x1b[0m` : `\x1b[1m📌 ${name}\x1b[0m`;
+        console.log(`    ${preview}`);
+      }
+      console.log('');
+      console.log('  cloudctx config set statusline_color <name>');
+      console.log('');
+      return;
+    }
+    const chosen = await pickColorInteractive();
+    if (chosen) {
+      setConfig('statusline_color', chosen);
+      const code = STATUSLINE_COLORS[chosen];
+      const preview = code ? `\x1b[1;${code}m📌 ${chosen}\x1b[0m` : `\x1b[1m📌 ${chosen}\x1b[0m`;
+      console.log(`  ✓ statusline_color = ${preview}`);
+    } else {
+      console.log('  (cancelled)');
+    }
+    return;
+  }
+
+  if (sub === 'set') {
+    const key = subArgs[1];
+    const value = subArgs[2];
+    if (!key || value === undefined) {
+      console.error('Usage: cloudctx config set <key> <value>');
+      process.exit(1);
+    }
+    if (!isKnownKey(key)) {
+      console.error(`Unknown key: ${key}`);
+      console.error(`Known keys: ${listKnownKeys().join(', ')}`);
+      process.exit(1);
+    }
+
+    let storeValue;
+    if (isBoolKey(key)) {
+      const bool = parseBool(value);
+      if (bool === null) {
+        console.error(`Value must be true/false (or on/off, yes/no) — got: ${value}`);
+        process.exit(1);
+      }
+      storeValue = bool;
+    } else if (isStringKey(key)) {
+      if (key === 'statusline_color' && !(value in STATUSLINE_COLORS)) {
+        console.error(`Unknown color: ${value}`);
+        console.error(`Run: cloudctx config colors`);
+        process.exit(1);
+      }
+      storeValue = value;
+    } else {
+      storeValue = value;
+    }
+
+    setConfig(key, storeValue);
+    const bool = storeValue;
+
+    if (key === 'statusline') {
+      if (bool) {
+        installStatusline();
+        console.log(`  ✓ statusline = true — wired into ~/.claude/settings.json`);
+        console.log(`    Open a new Claude Code session to see it.`);
+      } else {
+        uninstallStatusline();
+        console.log(`  ✓ statusline = false — removed from ~/.claude/settings.json`);
+      }
+    } else {
+      console.log(`  ✓ ${key} = ${storeValue}`);
+    }
+    return;
+  }
+
+  if (sub === 'unset') {
+    const key = subArgs[1];
+    if (!key) { console.error('Usage: cloudctx config unset <key>'); process.exit(1); }
+    unsetConfig(key);
+    if (key === 'statusline') uninstallStatusline();
+    console.log(`  ✓ unset ${key}`);
+    return;
+  }
+
+  console.error('Usage: cloudctx config [list|get|set|unset] ...');
+  process.exit(1);
+}
+
+async function pickColorInteractive() {
+  const colors = Object.keys(STATUSLINE_COLORS);
+  const currentColor = getConfigValue('statusline_color') || 'cyan';
+  let cursor = Math.max(0, colors.indexOf(currentColor));
+
+  const render = () => {
+    process.stdout.write('\x1b[2J\x1b[H');
+    console.log('');
+    console.log('  \x1b[1mCloudCtx — Choose statusline color\x1b[0m');
+    console.log('  \x1b[2m↑↓ navigate  ⏎ save  q cancel\x1b[0m');
+    console.log('');
+    for (let i = 0; i < colors.length; i++) {
+      const name = colors[i];
+      const code = STATUSLINE_COLORS[name];
+      const preview = code ? `\x1b[1;${code}m📌 ${name}\x1b[0m` : `\x1b[1m📌 ${name}\x1b[0m`;
+      const pointer = i === cursor ? '  \x1b[36m❯\x1b[0m ' : '    ';
+      const mark = name === currentColor ? ' \x1b[2m(current)\x1b[0m' : '';
+      console.log(`${pointer}${preview}${mark}`);
+    }
+    console.log('');
+  };
+
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding('utf-8');
+  render();
+
+  return new Promise((resolve) => {
+    const cleanup = () => {
+      process.stdout.write('\x1b[2J\x1b[H');
+      process.stdin.setRawMode(false);
+      process.stdin.removeListener('data', onKey);
+      process.stdin.pause();
+    };
+
+    const onKey = (key) => {
+      if (key === '\x03' || key === 'q' || key === '\x1b') {
+        cleanup();
+        resolve(null);
+        return;
+      }
+      if (key === '\x1b[A' || key === 'k') {
+        cursor = (cursor - 1 + colors.length) % colors.length;
+        render();
+        return;
+      }
+      if (key === '\x1b[B' || key === 'j') {
+        cursor = (cursor + 1) % colors.length;
+        render();
+        return;
+      }
+      if (key === '\r' || key === '\n') {
+        cleanup();
+        resolve(colors[cursor]);
+        return;
+      }
+    };
+
+    process.stdin.on('data', onKey);
+  });
 }
 
 function cmdImport(dbPath) {
@@ -466,7 +666,14 @@ function showHelp() {
     docs search "query"           Search docs
     docs delete <id>              Delete a doc
 
+    config                        List all config values
+    config color                  Interactive color picker for statusline
+    config get <key>              Get one value
+    config set <key> <value>      Set a value (known keys: statusline, statusline_color)
+    config unset <key>            Remove a value
+
     hook                          (internal) UserPromptSubmit handler
+    statusline                    (internal) Claude Code statusLine handler
     help                          Show this help
 `);
 }
