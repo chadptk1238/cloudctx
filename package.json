@@ -1,6 +1,6 @@
 {
   "name": "cloudctx",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Persistent memory for Claude Code. One command, full recall.",
   "type": "module",
   "bin": {
