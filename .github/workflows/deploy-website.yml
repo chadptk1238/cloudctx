@@ -1,0 +1,45 @@
+name: Deploy website to gh-pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync website/ → gh-pages root
+        run: |
+          set -e
+          STAGE=$(mktemp -d)
+          cp -r website/. "$STAGE/"
+          # CNAME is what binds the gh-pages branch to cloudctx.cc — must always be present.
+          echo "cloudctx.cc" > "$STAGE/CNAME"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin gh-pages:gh-pages
+          git checkout gh-pages
+
+          # Replace the tracked contents with the staged build.
+          git ls-files -z | xargs -0 -I{} rm -f "{}"
+          cp -r "$STAGE/." .
+
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No website changes — nothing to deploy."
+            exit 0
+          fi
+          git commit -m "Deploy website from main@${GITHUB_SHA::7}"
+          git push origin gh-pages
