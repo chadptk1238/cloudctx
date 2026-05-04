@@ -3,3 +3,6 @@ node_modules/
 *.db
 BACKUP_CURRENT_STATE.txt
 .DS_Store
+dist/
+bun.lockb
+.*.bun-build
