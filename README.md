@@ -11,6 +11,9 @@ Claude Code forgets everything between sessions. When context gets long, it comp
 CloudCtx gives Claude Code permanent memory. Every conversation is indexed into a local SQLite database. Your agent can search across months of history instantly, survives compaction without losing context, and you can jump back into any saved thread with a single command.
 
 ```bash
+# Prereq: Bun (https://bun.sh)
+curl -fsSL https://bun.sh/install | bash
+
 npm install -g cloudctx
 cloudctx init
 ```
@@ -72,6 +75,10 @@ The launcher is a full TUI: arrow keys to navigate, enter to resume, `d` to dele
 ## Install
 
 ```bash
+# 1. Install Bun (cloudctx runs on the Bun runtime)
+curl -fsSL https://bun.sh/install | bash
+
+# 2. Install cloudctx
 npm install -g cloudctx
 cloudctx init
 ```
@@ -84,8 +91,21 @@ cloudctx init
 
 ### Requirements
 
-- Node.js 18+
+- [Bun](https://bun.sh) 1.1+ (the runtime cloudctx runs on)
+- Node.js 18+ (only used as the entry shim for `npm install -g`)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+
+<a id="bun"></a>
+
+### Why Bun
+
+cloudctx 0.2.0 moved from Node + `better-sqlite3` to Bun + `bun:sqlite`. Reasons:
+
+- **No native compile.** `better-sqlite3` required `node-gyp` + Python + a C++ toolchain, and broke on every new Node major release (Node 24 was the last straw). `bun:sqlite` is built into the Bun runtime — zero compile, zero breakage.
+- **One install, every platform.** Same Bun binary across macOS, Linux, Windows.
+- **Faster cold start.** Bun starts ~3x faster than Node for the small CLI commands the cloudctx hook runs on every prompt.
+
+If `cloudctx` is invoked without Bun installed, you'll get a clear install message rather than a cryptic native-binary error. Existing data in `~/.cloudctx` is preserved across the upgrade — no migration needed.
 
 ---
 
