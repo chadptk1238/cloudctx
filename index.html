@@ -186,31 +186,31 @@ tailwind.config = {
   <div class="absolute inset-0 dotted-bg opacity-40"></div>
 
   <div class="relative max-w-7xl mx-auto px-6 pt-20 pb-24">
-    <div class="grid lg:grid-cols-5 gap-12 items-center">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
       <!-- Left: Copy -->
-      <div class="lg:col-span-3">
+      <div>
         <!-- Pill -->
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cream-50 border-2 border-navy-800 text-xs font-mono mb-8">
           <span class="w-2 h-2 bg-blush"></span>
-          <span class="text-navy-800">v0.1.1 — on npm</span>
+          <span class="text-navy-800">v0.2.1 — on npm</span>
           <span class="text-navy-500">•</span>
           <span class="text-navy-500">local-first</span>
         </div>
 
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] mb-6 text-navy-900">
-          Turn Claude Code into a fleet of <span class="relative inline-block">
-            named copilots
+        <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.02] mb-6 text-navy-900">
+          Permanent memory<br />
+          for <span class="relative inline-block">
+            Claude Code.
             <svg class="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 9C50 3 150 3 298 9" stroke="#F5A7A0" stroke-width="4" stroke-linecap="square"/>
             </svg>
-          </span>.
+          </span>
         </h1>
 
         <p class="text-lg md:text-xl text-navy-600 max-w-xl mb-10 leading-relaxed">
-          CloudCtx gives every Claude Code session permanent memory, protects it from compaction,
-          and lets you bookmark threads by name. Your meta-ads copilot, your API refactor agent,
-          your quote builder —
-          <span class="font-semibold text-navy-900">always ready, one command away.</span>
+          Claude Code forgets between sessions. CloudCtx gives it total recall —
+          every conversation indexed locally, searchable in milliseconds, survives compaction.
+          <span class="font-semibold text-navy-900">One command. Full memory.</span>
         </p>
 
         <!-- Install command -->
@@ -242,7 +242,7 @@ tailwind.config = {
       </div>
 
       <!-- Right: Hero image -->
-      <div class="relative lg:col-span-2">
+      <div class="relative">
         <div class="relative float">
           <img src="assets/hero.png" alt="CloudCtx cloud mascot" class="w-full h-auto pixel-edges" />
         </div>
@@ -290,16 +290,16 @@ tailwind.config = {
           <span class="w-12 h-0.5 bg-navy-800"></span>
           <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Persistent memory</span>
         </div>
-        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Stop re-explaining your project.</h3>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Every message, searchable. Forever.</h3>
         <p class="text-navy-600 text-lg leading-relaxed mb-6">
-          CloudCtx quietly indexes every Claude Code conversation into a local SQLite database.
-          Next time you ask <span class="italic">"how did we fix the redis timeout?"</span> —
-          Claude already knows.
+          Every conversation gets indexed into a local SQLite database with FTS5
+          full-text search. Past errors, old decisions, that clever fix from three weeks ago —
+          all one query away.
         </p>
         <p class="text-navy-600 text-lg leading-relaxed mb-8">
-          It searches automatically — CloudCtx drops instructions into your
-          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">CLAUDE.md</code>
-          so the agent knows to check its own memory before guessing.
+          Claude searches it automatically — CloudCtx injects instructions into your
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">CLAUDE.md</code>,
+          so your agent stops guessing and starts remembering.
         </p>
         <ul class="space-y-3 text-navy-700">
           <li class="flex gap-3 items-start"><span class="text-blush mt-1">▸</span> FTS5 full-text search across every session</li>
@@ -347,17 +347,17 @@ tailwind.config = {
           <span class="w-12 h-0.5 bg-navy-800"></span>
           <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Compaction recovery</span>
         </div>
-        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">No more compaction anxiety.</h3>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Compaction becomes a non-event.</h3>
         <p class="text-navy-600 text-lg leading-relaxed mb-6">
-          When a Claude Code session gets long, it auto-compresses your chat to save tokens —
-          and older details quietly disappear. Same thing happens when you run
-          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">/compact</code>.
-          Suddenly you're hearing <span class="italic">"remind me what we were doing?"</span>
+          When Claude Code compresses your context — manually via
+          <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">/compact</code>
+          or automatically when things get long — critical details vanish. CloudCtx detects
+          compaction and <span class="font-semibold text-navy-900">re-injects the last 40 messages</span> from your database
+          straight back into the conversation.
         </p>
         <p class="text-navy-600 text-lg leading-relaxed">
-          CloudCtx catches that moment and
-          <span class="font-semibold text-navy-900">silently re-injects the last 40 messages</span>
-          back into the conversation. Your agent doesn't skip a beat — no restart, no lost context.
+          Your agent picks up exactly where it left off. No "I don't have context about what we
+          were doing." No restart. No lost momentum.
         </p>
       </div>
       <div class="md:order-1">
@@ -398,23 +398,31 @@ tailwind.config = {
           <span class="w-12 h-0.5 bg-navy-800"></span>
           <span class="text-xs font-mono uppercase tracking-widest text-navy-500">Thread launcher</span>
         </div>
-        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Jump back into any project in one command.</h3>
+        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-navy-900 mb-5">Long-running copilots, not throwaway chats.</h3>
         <p class="text-navy-600 text-lg leading-relaxed mb-6">
-          Claude Code has <code class="px-1.5 py-0.5 rounded bg-cream-200 font-mono text-sm">--resume</code>,
-          but the list is a wall of unnamed session IDs. CloudCtx lets you
-          <span class="font-semibold text-navy-900">bookmark threads by name</span> —
-          your meta-ads campaign copilot, your web design collaborator, the quote builder
-          that remembers last week's negotiation.
+          Bookmark threads by name. Resume them from an interactive TUI. Every thread becomes a
+          domain-specific copilot — a meta-ads campaign agent, a web design collaborator, a quote
+          builder that remembers last week's negotiation.
         </p>
         <p class="text-navy-600 text-lg leading-relaxed mb-8">
-          <span class="font-semibold text-navy-900">Arrow keys to navigate. Enter to resume.
-            <code class="px-1 font-mono text-sm text-blush">d</code> to delete.</span>
-          No hunting through session IDs, no stale terminal tabs — just the threads you actually work on,
+          <span class="font-semibold text-navy-900">Save from inside Claude Code with
+            <code class="px-1 font-mono text-sm text-blush">/cloudctx-save</code>.
+            Resume from any directory with <code class="px-1 font-mono text-sm text-blush">cloudctx launch</code>.
+            Rename with <code class="px-1 font-mono text-sm text-blush">r</code> in the picker.</span>
+          No hunting through session IDs. No stale terminal tabs. Just the threads you work on,
           sorted by last activity.
         </p>
-        <div class="flex items-center gap-3">
+        <p class="text-navy-600 text-base leading-relaxed mb-8">
+          <span class="font-semibold text-navy-900">New in v0.1.4:</span> opt-in status line in Claude Code.
+          Run <code class="px-1 font-mono text-sm text-blush">cloudctx config set statusline true</code> and the
+          saved thread you're in shows up as <code class="px-1 font-mono text-sm text-blush">📌 thread-name</code>
+          right in CC's bottom bar. Pick your color with <code class="px-1 font-mono text-sm text-blush">cloudctx config color</code>.
+        </p>
+        <div class="flex flex-wrap items-center gap-3">
+          <code class="px-4 py-2 rounded-md bg-navy-900 text-cream-50 text-sm font-mono border-2 border-navy-800 shadow-pixel-sm">/cloudctx-save &lt;name&gt;</code>
+          <span class="text-navy-500 text-sm">inside CC →</span>
           <code class="px-4 py-2 rounded-md bg-navy-900 text-cream-50 text-sm font-mono border-2 border-navy-800 shadow-pixel-sm">cloudctx launch</code>
-          <span class="text-navy-500 text-sm">— and you're back in.</span>
+          <span class="text-navy-500 text-sm">to jump back in.</span>
         </div>
       </div>
       <div>
@@ -427,7 +435,7 @@ tailwind.config = {
           </div>
           <div class="p-6 tui">
             <div class="text-cream-50 font-medium mb-1">CloudCtx — Select a thread to resume</div>
-            <div class="text-cream-200/40 text-xs mb-6">↑↓ navigate &nbsp; ⏎ select &nbsp; d delete &nbsp; q quit</div>
+            <div class="text-cream-200/40 text-xs mb-6">↑↓ navigate &nbsp; ⏎ select &nbsp; T time &nbsp; A alpha &nbsp; r rename &nbsp; d delete &nbsp; q quit</div>
             <div class="space-y-1 text-cream-100">
               <div class="selected flex justify-between"><span class="text-cream-50">❯ meta-ads-copilot</span><span class="text-cream-200/40">2026-04-16</span></div>
               <div class="flex justify-between pl-3"><span>&nbsp;&nbsp;web-design-copilot</span><span class="text-cream-200/40">2026-04-15</span></div>
@@ -567,6 +575,8 @@ tailwind.config = {
         <div><span class="text-blush">reset</span>          <span class="text-cream-200/60">Clean uninstall</span></div>
         <div><span class="text-blush">launch</span>         <span class="text-cream-200/60">Interactive thread picker</span></div>
         <div><span class="text-blush">launch --save</span>  <span class="text-cream-200/60">Bookmark a thread</span></div>
+        <div><span class="text-blush">config</span>         <span class="text-cream-200/60">View / set settings</span></div>
+        <div><span class="text-blush">config color</span>   <span class="text-cream-200/60">Pick statusline color</span></div>
         <div><span class="text-blush">docs ingest</span>    <span class="text-cream-200/60">Ingest reference docs</span></div>
         <div><span class="text-blush">docs search</span>    <span class="text-cream-200/60">FTS over docs</span></div>
       </div>
@@ -596,6 +606,8 @@ tailwind.config = {
         <span class="ml-3 text-xs text-cream-200/60 font-mono">install</span>
       </div>
       <div class="p-6 font-mono text-sm leading-loose">
+        <div><span class="text-cream-200/50"># Prereq: Bun runtime</span></div>
+        <div><span class="text-blush">$</span> <span class="text-cream-50">curl -fsSL https://bun.sh/install | bash</span></div>
         <div><span class="text-blush">$</span> <span class="text-cream-50">npm install -g cloudctx</span></div>
         <div><span class="text-blush">$</span> <span class="text-cream-50">cloudctx init</span></div>
         <div class="text-cream-200/50 mt-2 pl-4 border-l-2 border-cream-200/10">
@@ -617,7 +629,7 @@ tailwind.config = {
         View on npm →
       </a>
     </div>
-    <div class="text-xs text-navy-500 mt-6 font-mono">Requires Node.js 18+ and Claude Code installed.</div>
+    <div class="text-xs text-navy-500 mt-6 font-mono">Requires <a href="https://bun.sh" class="underline">Bun</a> 1.1+, Node.js 18+, and Claude Code installed.</div>
   </div>
 </section>
 
