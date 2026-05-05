@@ -7,6 +7,7 @@ import { runStatusline } from '../lib/statusline.js';
 import { installHook, uninstallHook, installClaudeMd, uninstallClaudeMd, installSlashCommand, uninstallSlashCommand, installStatusline, uninstallStatusline } from '../lib/install.js';
 import { saveThread, removeThread, renameThread, listThreads, interactiveLaunch } from '../lib/launch.js';
 import { ingestDoc, listDocs, searchDocs, deleteDoc } from '../lib/docs.js';
+import { takeScreenshotAndPaste, pickFileAndAttach, fetchYoutubeTranscript } from '../lib/media.js';
 import { getConfig, getConfigValue, setConfig, unsetConfig, parseBool, isKnownKey, listKnownKeys, describeKey, getConfigPath, isBoolKey, isStringKey, STATUSLINE_COLORS } from '../lib/config.js';
 import { existsSync, rmSync, statSync } from 'fs';
 
@@ -23,8 +24,31 @@ switch (command) {
     break;
 
   case 'hook':
-    runHook();
+    await runHook();
     break;
+
+  case 'screenshot': {
+    const r = takeScreenshotAndPaste();
+    console.log(JSON.stringify(r));
+    process.exit(r.ok ? 0 : 1);
+  }
+
+  case 'upload': {
+    const r = pickFileAndAttach();
+    console.log(JSON.stringify(r));
+    process.exit(r.ok ? 0 : 1);
+  }
+
+  case 'yt': {
+    const url = args[1];
+    if (!url) {
+      console.error('Usage: cloudctx yt <youtube-url>');
+      process.exit(1);
+    }
+    const r = await fetchYoutubeTranscript(url);
+    console.log(JSON.stringify(r));
+    process.exit(r.ok ? 0 : 1);
+  }
 
   case 'statusline':
     runStatusline();

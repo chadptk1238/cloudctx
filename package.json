@@ -1,6 +1,6 @@
 {
   "name": "cloudctx",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Persistent memory for Claude Code. One command, full recall.",
   "type": "module",
   "bin": {
@@ -47,5 +47,7 @@
   },
   "author": "Chad Piatek",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "youtube-transcript": "^1.3.1"
+  }
 }
